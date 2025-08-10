@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8">
+<title>Dear Buddy</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{font-family:system-ui,sans-serif;background:#0b1220;color:#fff;margin:0}
+  .app{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  .msgs{flex:1;overflow:auto;padding:20px}
+  .bubble{max-width:72%;margin:10px 0;padding:12px 14px;border-radius:14px;line-height:1.35}
+  .me{background:#2b6cf6;margin-left:auto}
+  .bot{background:#161d33;border:1px solid #263457}
+  form{display:flex;gap:8px;padding:14px;border-top:1px solid #1f2a47;background:#0f1830}
+  input{flex:1;padding:12px;border-radius:10px;border:1px solid #2a3550;background:#0b1220;color:#fff}
+  button{padding:12px 16px;border-radius:10px;border:0;background:#2b6cf6;color:#fff}
+</style>
+<div class="app">
+  <div id="msgs" class="msgs"></div>
+  <form id="f"><input id="t" placeholder="Tell me how you're feeling…" autocomplete="off"><button>Send</button></form>
+</div>
+<script>
+const WEBHOOK_URL = "https://YOUR-N8N/webhook/chat"; // <-- replace with your n8n production webhook URL
+const sidKey="dearBuddySessionId"; let sessionId=localStorage.getItem(sidKey)||crypto.randomUUID(); localStorage.setItem(sidKey,sessionId);
+const msgs=document.getElementById('msgs'), form=document.getElementById('f'), input=document.getElementById('t');
+function add(text, who){ const d=document.createElement('div'); d.className=`bubble ${who}`; d.textContent=text; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; }
+form.addEventListener('submit', async e=>{ e.preventDefault(); const text=input.value.trim(); if(!text) return; input.value=""; add(text,'me');
+  try{ const r=await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId,text})});
+       const reply=await r.text(); add(reply||"(no reply)",'bot'); }catch(err){ console.error(err); add("Sorry—can’t reach the server right now.",'bot'); }});
+</script>
