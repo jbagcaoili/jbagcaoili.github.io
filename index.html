@@ -8,7 +8,7 @@
   :root{ --bg:#201330; --ink:#f7e7a8; --accent:#0d6b78; --card:#2a1842; }
   *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,Segoe UI,Inter,Arial,sans-serif}
-  .wrap{min-height:100%;display:grid;grid-template-rows:auto 1fr auto}
+  .wrap{min-height:100%;display:flex;flex-direction:column}
   .brand{display:flex;align-items:center;gap:12px;padding:22px 28px}
   .brand img{height:40px;image-rendering:pixelated}
   .brand .title{font-weight:800;letter-spacing:.06em;font-size:22px}
@@ -17,14 +17,25 @@
   .hero img{width:min(520px,80vw);height:auto;image-rendering:pixelated;filter:drop-shadow(0 22px 40px rgba(0,0,0,.45))}
   .hero .placeholder{width:min(520px,80vw);height:300px;border:2px dashed rgba(255,255,255,.25);border-radius:16px;display:grid;place-items:center;opacity:.8}
 
-  /* chat area */
-  .msgs{flex:1; overflow:auto; padding:20px; max-width:820px; width:92vw; margin:0 auto}
-  .bubble{max-width:72%; margin:10px 0; padding:12px 14px; border-radius:14px; line-height:1.35;
-          word-wrap:break-word; white-space:pre-wrap}
+  /* chat area (new/stronger styling so you can SEE it) */
+  .msgs{
+    flex:1; overflow:auto;
+    width:min(820px, 92vw);
+    margin:10px auto 0;
+    padding:16px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:14px;
+  }
+  .bubble{
+    max-width:72%;
+    margin:10px 0; padding:12px 14px; border-radius:14px; line-height:1.35;
+    word-wrap:break-word; white-space:pre-wrap;
+  }
   .me{background:#2b6cf6; color:#fff; margin-left:auto}
   .bot{background:#161d33; border:1px solid #263457; color:var(--ink)}
 
-  .dock{display:flex;justify-content:center;padding:28px 20px 38px}
+  .dock{display:flex;justify-content:center;padding:18px 20px 38px}
   .dock form{width:min(820px,92vw);display:flex;gap:12px;align-items:center;background:var(--card);
     border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
   .dock input{flex:1;padding:14px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#140b22;color:var(--ink);outline:none}
@@ -46,35 +57,34 @@
          onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder',textContent:'Add assets/hero.png'}))">
   </main>
 
-  <!-- persistent messages -->
+  <!-- messages area -->
   <div id="msgs" class="msgs"></div>
 
   <footer class="dock">
     <form id="chat">
       <input id="msg" placeholder="Tell me how you’re feeling buddy..." autocomplete="off" />
-      <button id="send">Send</button>
+      <button id="send" type="submit">Send</button>
     </form>
   </footer>
 </div>
 
 <script>
-const WEBHOOK_URL = "https://jbagcaoili.app.n8n.cloud/webhook/chat"; // your n8n Production URL
+const WEBHOOK_URL = "https://jbagcaoili.app.n8n.cloud/webhook/chat"; // your prod webhook
 const sidKey = "dearBuddySessionId";
 let sessionId = localStorage.getItem(sidKey) || crypto.randomUUID();
 localStorage.setItem(sidKey, sessionId);
 
-// UI refs
+// refs
 const msgs  = document.getElementById('msgs');
 const form  = document.getElementById('chat');
 const input = document.getElementById('msg');
 const send  = document.getElementById('send');
 
-// load & persist history (per sessionId)
+// persist per session
 const HKEY = `db_msgs_${sessionId}`;
 let history = JSON.parse(localStorage.getItem(HKEY) || '[]');
 
 function save(){ localStorage.setItem(HKEY, JSON.stringify(history)); }
-
 function addMsg(who, text){
   const d = document.createElement('div');
   d.className = `bubble ${who}`;
@@ -85,8 +95,13 @@ function addMsg(who, text){
   save();
 }
 
-// restore on load
-history.forEach(m => addMsg(m.who, m.text));
+// --- TEST bubble so you can see the area right away ---
+if (history.length === 0) addMsg('bot', '👋 I’m here—tell me how you’re feeling.');
+
+history.forEach(m => { /* re-add after test to preserve order */
+  // If we added the test above for an empty history, skip duplicating it:
+  if (!(history.length === 1 && m.text.includes("I’m here—"))) addMsg(m.who, m.text);
+});
 
 form.addEventListener('submit', async (e)=>{
   e.preventDefault();
