@@ -1,53 +1,69 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Dear Buddy</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root{
-      --bg:#201330;         /* deep purple */
-      --ink:#f7e7a8;        /* warm light for text */
-      --accent:#0d6b78;     /* teal button */
-      --accent-2:#ffb84d;   /* pixel gold */
-      --card:#2a1842;       /* darker panel */
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--ink);
-      font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;
-    }
-    .wrap{
-      min-height:100%; display:grid; grid-template-rows:auto 1fr auto;
-      background:
-        radial-gradient(1200px 600px at 70% 30%, rgba(255,255,255,.04), transparent 60%),
-        radial-gradient(900px 500px at 20% 70%, rgba(255,255,255,.03), transparent 60%),
-        var(--bg);
-    }
-    /* header */
-    .brand{
-      display:flex; align-items:center; gap:12px; padding:22px 28px;
-    }
-    .brand img{ height:40px; image-rendering:pixelated }
-    .brand .title{
-      font-weight:800; letter-spacing:.06em; font-size:22px;
-    }
-    .brand .tag{ font-size:12px; opacity:.8; display:block; margin-top:2px }
+<meta charset="utf-8" />
+<title>Dear Buddy</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{ --bg:#201330; --ink:#f7e7a8; --accent:#0d6b78; --card:#2a1842; }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,Segoe UI,Inter,Arial,sans-serif}
+  .wrap{min-height:100%;display:grid;grid-template-rows:auto 1fr auto}
+  .brand{display:flex;align-items:center;gap:12px;padding:22px 28px}
+  .brand img{height:40px;image-rendering:pixelated}
+  .brand .title{font-weight:800;letter-spacing:.06em;font-size:22px}
+  .brand .tag{font-size:12px;opacity:.8}
+  .hero{display:grid;place-items:center;padding:20px}
+  .hero img{width:min(520px,80vw);height:auto;image-rendering:pixelated;filter:drop-shadow(0 22px 40px rgba(0,0,0,.45))}
+  .hero .placeholder{width:min(520px,80vw);height:300px;border:2px dashed rgba(255,255,255,.25);border-radius:16px;display:grid;place-items:center;opacity:.8}
+  .dock{display:flex;justify-content:center;padding:28px 20px 38px}
+  .dock form{width:min(820px,92vw);display:flex;gap:12px;align-items:center;background:var(--card);
+    border:1px solid rgba(255,255,255,.08);padding:12px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .dock input{flex:1;padding:14px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:#140b22;color:var(--ink);outline:none}
+  .dock button{padding:14px 20px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+  .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);max-width:min(760px,92vw);
+    background:#140b22;color:var(--ink);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 16px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <!-- If logo missing, text still shows -->
+    <img src="assets/logo.png" alt="" onerror="this.remove()">
+    <div>
+      <div class="title">DEAR BUDDY ♥</div>
+      <div class="tag">not just a journal but a journey</div>
+    </div>
+  </header>
 
-    /* hero */
-    .hero{
-      display:grid; place-items:center; padding:20px;
-    }
-    .hero img{
-      width:min(520px, 80vw); height:auto; image-rendering:pixelated;
-      filter: drop-shadow(0 22px 40px rgba(0,0,0,.45));
-    }
+  <main class="hero">
+    <!-- If hero image missing, show placeholder block -->
+    <img src="assets/hero.png" alt="Diary" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder',textContent:'Add assets/hero.png'}))">
+  </main>
 
-    /* input dock */
-    .dock{
-      display:flex; justify-content:center; padding:28px 20px 38px;
-    }
-    .dock form{
-      width:min(820px, 92vw); display:flex; gap:12px; align-items:center;
-      ba
+  <footer class="dock">
+    <form id="chat">
+      <input id="msg" placeholder="Tell me how you’re feeling buddy..." autocomplete="off" />
+      <button id="send">Send</button>
+    </form>
+  </footer>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const WEBHOOK_URL = "https://YOUR-N8N/webhook/chat"; // <- replace with your n8n Production URL
+const sidKey="dearBuddySessionId";
+let sessionId=localStorage.getItem(sidKey)||crypto.randomUUID(); localStorage.setItem(sidKey,sessionId);
+const form=document.getElementById('chat'), input=document.getElementById('msg'), send=document.getElementById('send'), toast=document.getElementById('toast');
+function showToast(t){toast.textContent=t;toast.style.display='block';clearTimeout(showToast._t);showToast._t=setTimeout(()=>toast.style.display='none',6000);}
+form.addEventListener('submit',async e=>{
+  e.preventDefault(); const text=input.value.trim(); if(!text) return; send.disabled=true;
+  try{ const r=await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId,text})});
+       const reply=await r.text(); showToast(reply||"(no reply)"); }
+  catch(err){ console.error(err); showToast("Can’t reach the helper right now—try again?"); }
+  finally{ send.disabled=false; input.value=""; input.focus(); }
+});
+</script>
+</body>
+</html>
