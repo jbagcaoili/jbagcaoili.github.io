@@ -17,21 +17,11 @@
   .hero img{width:min(520px,80vw);height:auto;image-rendering:pixelated;filter:drop-shadow(0 22px 40px rgba(0,0,0,.45))}
   .hero .placeholder{width:min(520px,80vw);height:300px;border:2px dashed rgba(255,255,255,.25);border-radius:16px;display:grid;place-items:center;opacity:.8}
 
-  /* chat area (new/stronger styling so you can SEE it) */
-  .msgs{
-    flex:1; overflow:auto;
-    width:min(820px, 92vw);
-    margin:10px auto 0;
-    padding:16px;
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.10);
-    border-radius:14px;
-  }
-  .bubble{
-    max-width:72%;
-    margin:10px 0; padding:12px 14px; border-radius:14px; line-height:1.35;
-    word-wrap:break-word; white-space:pre-wrap;
-  }
+  /* chat area */
+  .msgs{flex:1; overflow:auto; width:min(820px,92vw); margin:10px auto 0; padding:16px;
+        background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:14px}
+  .bubble{max-width:72%; margin:10px 0; padding:12px 14px; border-radius:14px; line-height:1.35;
+          word-wrap:break-word; white-space:pre-wrap}
   .me{background:#2b6cf6; color:#fff; margin-left:auto}
   .bot{background:#161d33; border:1px solid #263457; color:var(--ink)}
 
@@ -57,7 +47,7 @@
          onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'placeholder',textContent:'Add assets/hero.png'}))">
   </main>
 
-  <!-- messages area -->
+  <!-- messages (clears on refresh) -->
   <div id="msgs" class="msgs"></div>
 
   <footer class="dock">
@@ -70,38 +60,28 @@
 
 <script>
 const WEBHOOK_URL = "https://jbagcaoili.app.n8n.cloud/webhook/chat"; // your prod webhook
+
+// If you want a brand-new server session each refresh, uncomment next line:
+// let sessionId = crypto.randomUUID();
+
+// Otherwise keep the same sessionId (but UI still clears each refresh):
 const sidKey = "dearBuddySessionId";
 let sessionId = localStorage.getItem(sidKey) || crypto.randomUUID();
 localStorage.setItem(sidKey, sessionId);
 
-// refs
+// UI refs
 const msgs  = document.getElementById('msgs');
 const form  = document.getElementById('chat');
 const input = document.getElementById('msg');
 const send  = document.getElementById('send');
 
-// persist per session
-const HKEY = `db_msgs_${sessionId}`;
-let history = JSON.parse(localStorage.getItem(HKEY) || '[]');
-
-function save(){ localStorage.setItem(HKEY, JSON.stringify(history)); }
 function addMsg(who, text){
   const d = document.createElement('div');
   d.className = `bubble ${who}`;
   d.textContent = text;
   msgs.appendChild(d);
   msgs.scrollTop = msgs.scrollHeight;
-  history.push({ who, text });
-  save();
 }
-
-// --- TEST bubble so you can see the area right away ---
-if (history.length === 0) addMsg('bot', '👋 I’m here—tell me how you’re feeling.');
-
-history.forEach(m => { /* re-add after test to preserve order */
-  // If we added the test above for an empty history, skip duplicating it:
-  if (!(history.length === 1 && m.text.includes("I’m here—"))) addMsg(m.who, m.text);
-});
 
 form.addEventListener('submit', async (e)=>{
   e.preventDefault();
